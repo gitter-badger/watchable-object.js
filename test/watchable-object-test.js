@@ -35,6 +35,8 @@ describe(__filename + "#", function () {
     var wo = new WatchableObject();
     wo.set("a.b.c", "d");
     assert.equal(wo.a.b.c, "d");
+    wo.set("a.b.c", "d2");
+    assert.equal(wo.a.b.c, "d2");
   });
 
   it("can 'set' a deep property on a sub object", function () {
@@ -52,4 +54,78 @@ describe(__filename + "#", function () {
     assert.equal(wo.a, 1);
     assert.equal(wo.b, 2);
   });
+
+  it("can watch for changes", function () {
+    var wo = new WatchableObject();
+    var i = 0;
+    wo.watch(function () {
+      i++;
+    });
+    wo.set("a", 2);
+    assert.equal(i, 1);
+  });
+
+  it("can watch for changes on a sub object", function () {
+    var wo = new WatchableObject({a:new WatchableObject()});
+    var i = 0;
+    wo.watch(function () {
+      i++;
+    });
+    wo.set("a.b", 2);
+    assert.equal(i, 1);
+    wo.set("c", 1);
+    assert.equal(i, 2);
+  });
+
+
+  it("can watch for changes on a deep sub object", function () {
+    var wo = new WatchableObject({a:new WatchableObject({b:new WatchableObject()})});
+    var i = 0;
+    wo.watch(function () {
+      i++;
+    });
+    wo.set("a.b.c", 2);
+    assert.equal(i, 1);
+    wo.set("a.b.d", 2);
+    assert.equal(i, 2);
+    wo.set("a.c.d", 2);
+    assert.equal(i, 3);
+
+    wo.a.b.set("d", 2);
+    assert.equal(i, 4);
+  });
+
+  it("can add and dispose a listener", function () {
+    new WatchableObject().watch(function() {}).dispose();
+  });
+
+  it("can add multiple listeners", function () {
+    var wo = new WatchableObject();
+    var i = 0;
+    var l1 = wo.watch(function(){ i++ });
+    var l2 = wo.watch(function(){ i++ });
+    var l3 = wo.watch(function(){ i++ });
+    wo.set("a", 1);
+    assert.equal(i, 3);
+
+    l1.dispose();
+    l2.dispose();
+    l3.dispose();
+  });
+
+  it("can removes watchable", function () {
+    var i = 0;
+    var wo = new WatchableObject({a:new WatchableObject()});
+    var wo2 = wo.a;
+    wo.set("a", void 0);
+    wo.watch(function () {
+      i++;
+    });
+    wo2.set("a", 1);
+    assert.equal(i, 0);
+  })
+
+
+
+
 });
